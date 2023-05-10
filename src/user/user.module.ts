@@ -5,6 +5,7 @@ import { User, UserSchema } from './schemas/user.schema';
 import { UserController } from './user.controller';
 import { AuthModule } from 'src/auth/auth.module';
 import { CommonModule } from 'src/common/common.module';
+import { UserRepository } from './user.repository';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { CommonModule } from 'src/common/common.module';
     CommonModule
   ],
   controllers: [UserController],
-  providers: [UserService],
-  exports: [UserService, MongooseModule]
+  providers: [UserService, UserRepository],
+  exports: [UserService, MongooseModule, UserRepository]
 })
 export class UserModule {}

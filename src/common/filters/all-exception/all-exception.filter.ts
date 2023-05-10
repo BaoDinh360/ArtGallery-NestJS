@@ -8,12 +8,14 @@ export class AllExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const status = exception instanceof HttpException ? exception.getStatus(): HttpStatus.INTERNAL_SERVER_ERROR
+    const bodyMessage = exception['response'] !== undefined ? exception['response'] : ''
 
     response.status(status).json({
       status : Status.ERROR,
       statusCode : status,
       data : [],
       message : exception.message,
+      validationMessages:bodyMessage,
       stack : exception.stack
     })
   }

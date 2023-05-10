@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { TransformInterceptor } from './common/interceptors/transform/transform.interceptor';
 import { PostModule } from './posts/post.module';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
@@ -19,10 +19,6 @@ import { EventsModule } from './events/events.module';
   imports: [
     ConfigModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGO_URI as string),
-    // ServeStaticModule.forRoot({
-    //   rootPath: join(__dirname, '..', 'uploads'),
-    //   renderPath: '/uploads/'
-    // }),
     PostModule,
     UserModule,
     AuthModule,
@@ -39,7 +35,7 @@ import { EventsModule } from './events/events.module';
     {
       provide: APP_FILTER,
       useClass: AllExceptionFilter
-    },
+    }
   ],
 })
 export class AppModule {}

@@ -6,6 +6,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { multerOptions } from "src/common/configs/multer.config";
 import { UserAvatarDto } from "./dtos/user.dto";
 import { UpdateUserDto } from "./dtos/update-user.dto";
+import { Image } from "src/shared/schemas/image.schema";
 
 @Controller('/api/users')
 export class UserController{
@@ -24,12 +25,13 @@ export class UserController{
     @UseGuards(AuthGuard)
     @Post('upload')
     @UseInterceptors(FileInterceptor('avatar', multerOptions))
-    uploadFile(@UploadedFile() file : Express.Multer.File) : UserAvatarDto{
+    uploadFile(@UploadedFile() file : Express.Multer.File, @Req() request: Request) : Image{
+        const fullImgUrl = `${request.protocol}://${request.get('Host')}/${file.path}`;
         return {
             name: file.filename,
             type : file.filename.split('.')[1],
             size : file.size,
-            path : file.path
+            path : fullImgUrl
         }
     } 
 

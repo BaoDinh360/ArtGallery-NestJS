@@ -1,10 +1,37 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as express from 'express';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
+// import { ValidationPipe } from './common/pipes/validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  //serve static image folder
   app.use('/uploads', express.static('uploads'));
+  // app.useGlobalPipes(new ValidationPipe())
+  //global validation pipe
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    disableErrorMessages: false,
+    enableDebugMessages: true,
+    exceptionFactory: (validationErrors: ValidationError[] = []) =>{
+      const validationMsg = {};
+      validationErrors.forEach(err =>{
+        if(err.constraints != undefined){
+          validationMsg[err.property] = Object.values(err.constraints).join('. ').trim();
+        }
+        else if(err.children.length > 0){
+          const nestedValidation = {};
+          err.children.forEach(nested => {
+            nestedValidation[nested.property] = Object.values(nested.constraints).join('. ').trim();
+          })
+          validationMsg[err.property] = nestedValidation;
+        }
+      });
+      return new BadRequestException(validationMsg);
+    }
+  }));
   await app.listen(3000);
 }
 bootstrap();

@@ -47,7 +47,7 @@ export class AuthService {
         }
     }
 
-    async SignUp(createUserDto: CreateUserDto): Promise<AuthDto>{
+    async SignUp(createUserDto: CreateUserDto){
         try {
             const userExist = await this.userService.findUserByEmail(createUserDto.email);
             if(userExist){
@@ -56,18 +56,14 @@ export class AuthService {
             const saltRound = 10;
             const hashedPassword = await bcrypt.hash(createUserDto.password, saltRound);
             const newUser = await this.userService.createNewUser(createUserDto, hashedPassword);
-            const accessToken = await this.generateAccessToken(newUser);
-            const refreshToken = await this.generateRefreshToken(newUser);
+            // const accessToken = await this.generateAccessToken(newUser);
+            // const refreshToken = await this.generateRefreshToken(newUser);
             //save refreshToken to db
-            await this.authSessionModel.create({
-                userId: newUser['_id'],
-                refreshToken: refreshToken
-            })
-            return {
-                accessToken: accessToken,
-                refreshToken: refreshToken,
-                expiredIn: this.accessTokenExpires
-            }
+            // await this.authSessionModel.create({
+            //     userId: newUser['_id'],
+            //     refreshToken: refreshToken
+            // })
+            return newUser;
         } catch (error) {
             throw error;
         }
