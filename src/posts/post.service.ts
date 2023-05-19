@@ -16,43 +16,38 @@ import { LikePostDto } from "./dtos/like-post.dto";
 @Injectable()
 export class PostService{
     constructor(
-        // @InjectModel(Post.name) private postModel : Model<Post>,
+        @InjectModel(Post.name) private postModel : Model<Post>,
         private userService: UserService,
         private postRepository: PostRepository,
     ){}
 
     async getAllPosts(queryPage: string, queryLimit: string){
         try {
-            let limit = 0;
-            let skip = 0;
-            let page = 0;
-            if(queryPage !== '' || queryLimit !== ''){
-                page = Number(queryPage);
-                limit = Number(queryLimit);
-                skip = (page - 1) * limit;
-            }
-            
             const totalPosts = await this.postRepository.coundDocumentWithCondition();
+            let page = Number(queryPage);
+            let limit = Number(queryLimit);
+            let skip = 0;
+            if(Number.isNaN(page) || Number.isNaN(limit)){
+                page = 0;
+                limit = totalPosts;
+                console.log(limit, totalPosts);
+            }
+            else {
+                skip = (page - 1) * limit;
+            } 
+            
             const totalPage = Math.ceil(totalPosts/ limit); 
-            const posts = await this.postRepository.findByCondition(
-                null, 
-                null,
-                {
-                    sort:{createdAt: 'desc'},
-                    skip: skip,
-                    limit:limit,
-                    populate:{path: 'author', select: '_id username avatar'}
-                })
+            const posts = await this.postRepository.getAllPosts(skip, limit);
+            // console.log(posts);
             
             const postDtos = plainToInstance(PostDto, posts, {excludeExtraneousValues:true});
-            const postDtoJsons = instanceToPlain(postDtos) as PostDto[];
             
             const paginatePostDto : PaginatePostDto<PostDto> = {
                 totalCount: totalPosts,
                 itemsPerPage: Number(limit),
                 pageIndex : Number(page),
                 totalPage : totalPage,
-                items: postDtoJsons
+                items: postDtos
             }
             return paginatePostDto;
         } catch (error) {
@@ -62,54 +57,44 @@ export class PostService{
 
     async getPost(id : string){
         try {
-            const post = await this.postRepository.findByIdWithCondition(
-                id,
-                null,
-                {
-                    populate:{path: 'author', select: '_id username avatar'}
-                }
-            );
+            const post = await this.postRepository.getPostById(id);
             const postDto = plainToInstance(PostDto, post, {excludeExtraneousValues: true});
-            const postDtoJson = instanceToPlain(postDto) as PostDto;
-            
-            return postDtoJson;
+            return postDto;
         } catch (error) {
             throw error;
         }
     }
 
     async getAllPostsCreateByUser(queryPage : string, queryLimit: string, authorId: string){
+        console.log(queryPage, queryLimit);
+        
         try {
-            let limit = 0;
-            let skip = 0;
-            let page = 0;
-            if(queryPage !== '' || queryLimit !== ''){
-                page = Number(queryPage);
-                limit = Number(queryLimit);
-                skip = (page - 1) * limit;
-            }
             const totalPosts = await this.postRepository.coundDocumentWithCondition({
                 author: authorId
             });
+            let page = Number(queryPage);
+            let limit = Number(queryLimit);
+            let skip = 0;
+            if(Number.isNaN(page) || Number.isNaN(limit)){
+                page = 0;
+                limit = totalPosts;
+                console.log(limit, totalPosts);
+            }
+            else {
+                skip = (page - 1) * limit;
+            }
+            
             const totalPage = Math.ceil((totalPosts / Number(limit)));
-            const posts = await this.postRepository.findByCondition(
-                { author: authorId},
-                null,
-                {
-                    sort: {createdAt: 'desc'},
-                    skip: skip,
-                    limit:limit,
-                    populate:{path: 'author', select: '_id username avatar'}
-                }
-            )
+            console.log(limit, skip);
+            console.log(typeof limit, typeof skip);
+            const posts = await this.postRepository.getPostsByAuthor(skip, limit, authorId);
             const postDtos = plainToInstance(PostDto, posts, {excludeExtraneousValues:true});
-            const postDtoJsons = instanceToPlain(postDtos) as PostDto[];
             const paginatePostDto : PaginatePostDto<PostDto> = {
                 totalCount: totalPosts,
                 itemsPerPage: Number(limit),
                 pageIndex : Number(page),
                 totalPage : totalPage,
-                items: postDtoJsons
+                items: postDtos
             }
             return paginatePostDto;
         } catch (error) {
@@ -188,7 +173,7 @@ export class PostService{
             }
             else{
                 await this.postRepository.findByIdAndUpdateOne(postId, { $push: {userLikedPost : userId}}, {'timestamps': false});
-                const updatedPost = await this.postRepository.findByIdWithCondition(postId, {'userLikedPost': 1})
+                const updatedPost = await this.postRepository.findByIdWithCondition(postId)
                 return { 
                     id: postId,
                     likes: updatedPost.userLikedPost.length

@@ -14,12 +14,14 @@ import { AllExceptionFilter } from './common/filters/all-exception/all-exception
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { EventsModule } from './events/events.module';
+import { PostCommentModule } from './post-comments/post-comment.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGO_URI as string),
     PostModule,
+    PostCommentModule,
     UserModule,
     AuthModule,
     CommonModule,

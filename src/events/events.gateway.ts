@@ -5,6 +5,8 @@ import { Server } from 'socket.io';
 import { Req, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "src/common/guards/auth.guard";
 import { Request } from "express";
+import { CreateCommentDto } from "src/post-comments/dtos/create-comment.dto";
+import { PostCommentService } from "src/post-comments/post-comment.service";
 
 @WebSocketGateway({
     cors:{
@@ -13,18 +15,25 @@ import { Request } from "express";
 })
 export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect{
     constructor(
-        private postService: PostService
+        private postService: PostService,
+        private postCommentService: PostCommentService,
     ){}
     @WebSocketServer() server: Server;
     private connectedUserId: string;
+    private connectedClientCounts: number = 0;
     afterInit(server: Server) {
         console.log('Socket instantiated');
     }
     handleConnection(client: any, ...args: any[]) {
         // console.log(`New connection: ${client.id}`);
+        this.connectedClientCounts++;
+        console.log(this.connectedClientCounts);
+        
     }
     handleDisconnect(client: any) {
         // console.log(`Disconnected: ${client.id}`);
+        this.connectedClientCounts--;
+        console.log(this.connectedClientCounts);
     }
 
     @SubscribeMessage('user-connected')
@@ -43,5 +52,16 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
         const dataEmitted = await this.postService.likePost(postId, this.connectedUserId);
         // client.emit('like-events', dataEmitted);
         this.server.emit('like-events', dataEmitted);
+    }
+
+    @SubscribeMessage('comment-events')
+    async emitNewComment(@MessageBody() createCommentDto: CreateCommentDto){
+        const dataEmitted = await this.postCommentService.commentPost(createCommentDto, this.connectedUserId);
+        this.server.emit('new-comment', dataEmitted, (err, res) =>{
+            if(!err){
+                console.log('Client received:', res);
+                
+            }
+        });
     }
 }

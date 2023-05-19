@@ -1,4 +1,4 @@
-import { FilterQuery, Model } from "mongoose";
+import mongoose, { FilterQuery, Model } from "mongoose";
 
 export abstract class MongooseRepository<T>{
     constructor(private readonly mongooseModel: Model<T>){}
@@ -45,8 +45,8 @@ export abstract class MongooseRepository<T>{
         return await this.mongooseModel.find(filterQuery).countDocuments();
     }
 
-    async insertOne(createData: unknown): Promise<T>{
-        return await this.mongooseModel.create(createData);
+    async insertOne(createData: unknown, populate?: any): Promise<T>{
+        return (await this.mongooseModel.create(createData)).populate(populate);
     }
 
     async findByIdAndUpdateOne(

@@ -9,7 +9,7 @@ import { UserDto } from 'src/user/dtos/user.dto';
 import { UserLoginDto } from 'src/user/dtos/user-login.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthSession } from './schemas/auth-session.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +19,7 @@ export class AuthService {
         @InjectModel(AuthSession.name) private authSessionModel : Model<AuthSession>,
     ){}
 
-    private accessTokenExpires: string = process.env.ACCESS_TOKEN_EXPIRES || '15m';
+    private accessTokenExpires: string = process.env.ACCESS_TOKEN_EXPIRES || '60m';
     private refreshTokenExpires: string = process.env.REFRESH_TOKEN_EXPIRES || '1d';
 
     async signIn(userLoginDto : UserLoginDto): Promise<AuthDto>{

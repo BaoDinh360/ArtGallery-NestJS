@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { ExposeOptions, Transform } from "class-transformer";
 import { Date } from "mongoose";
 import * as mongoose from "mongoose";
 import { Image, ImageSchema } from "src/shared/schemas/image.schema";
 import { User } from "src/user/schemas/user.schema";
+
 
 @Schema({timestamps: true})
 export class Post extends mongoose.Document{

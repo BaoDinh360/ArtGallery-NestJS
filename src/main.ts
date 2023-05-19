@@ -7,9 +7,10 @@ import { ValidationError } from 'class-validator';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  //#region App configuration
   //serve static image folder
   app.use('/uploads', express.static('uploads'));
-  // app.useGlobalPipes(new ValidationPipe())
   //global validation pipe
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
@@ -32,6 +33,13 @@ async function bootstrap() {
       return new BadRequestException(validationMsg);
     }
   }));
+  //CORS
+  // app.enableCors({
+  //   origin: [process.env.CLIENT_DOMAIN_DEV],
+  //   preflightContinue: false
+  // })
+  //#endregion
+  
   await app.listen(3000);
 }
 bootstrap();

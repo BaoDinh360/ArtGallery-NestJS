@@ -26,10 +26,12 @@ export class UserService {
         return user;
     }
 
-    async getUserProfile(id: string) : Promise<User | undefined>{
+    async getUserProfile(id: string) : Promise<UserDto | undefined>{
         //const user =  await this.userModel.findById(id).select('-__v -password');
         const user = await this.userRepository.findByIdWithCondition(id, {'password':0});
-        return user;
+        const userDto = plainToInstance(UserDto, user, {excludeExtraneousValues: true})
+        const userDtoJson = instanceToPlain(userDto) as UserDto;        
+        return userDtoJson;
     }
 
     async createNewUser(createUserDto: CreateUserDto, hashedPassword: string): Promise<UserDto> {
@@ -40,10 +42,7 @@ export class UserService {
             password: hashedPassword,
         }
         const newUser = await this.userRepository.insertOne(userData);
-        const newUserDto = plainToInstance(UserDto, newUser, {
-            groups: ['create'],
-            excludeExtraneousValues:true
-        });
+        const newUserDto = plainToInstance(UserDto, newUser, {excludeExtraneousValues:true});
         const newUserDtoJson = instanceToPlain(newUserDto) as UserDto;
         console.log(newUser);
         console.log(newUserDto);
@@ -59,18 +58,8 @@ export class UserService {
                 throw new BadRequestException('User not found');
             }
             const updatedUser = await this.userRepository.findByIdAndUpdateOne(userId, updateUserDto);
-            const updatedUserDto = plainToInstance(UserDto, updatedUser, {
-                groups: ['update'],
-                excludeExtraneousValues:true
-            })
-            const updatedUserDtoJson = instanceToPlain(updateUserDto) as UserDto;
-            // const userDto: UserDto={
-            //     _id: updatedUser._id.toString(),
-            //     name: updatedUser.name,
-            //     email: updatedUser.email,
-            //     username: updatedUser.username,
-            //     avatar: updatedUser.avatar
-            // }
+            const updatedUserDto = plainToInstance(UserDto, updatedUser, {excludeExtraneousValues:true})
+            const updatedUserDtoJson = instanceToPlain(updatedUserDto) as UserDto;
             return updatedUserDtoJson;
         } catch (error) {
             throw error;
