@@ -15,5 +15,6 @@ import { AuthSession, AuthSessionSchema } from './schemas/auth-session.schema';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtService, UserService],
+  exports: [AuthService],
 })
 export class AuthModule {}

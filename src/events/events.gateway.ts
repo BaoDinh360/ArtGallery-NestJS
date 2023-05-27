@@ -7,6 +7,7 @@ import { AuthGuard } from "src/common/guards/auth.guard";
 import { Request } from "express";
 import { CreateCommentDto } from "src/post-comments/dtos/create-comment.dto";
 import { PostCommentService } from "src/post-comments/post-comment.service";
+import { SocketGuard } from "src/common/guards/socket/socket.guard";
 
 @WebSocketGateway({
     cors:{
@@ -19,49 +20,35 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
         private postCommentService: PostCommentService,
     ){}
     @WebSocketServer() server: Server;
-    private connectedUserId: string;
-    private connectedClientCounts: number = 0;
     afterInit(server: Server) {
         console.log('Socket instantiated');
     }
     handleConnection(client: any, ...args: any[]) {
-        // console.log(`New connection: ${client.id}`);
-        this.connectedClientCounts++;
-        console.log(this.connectedClientCounts);
-        
+        console.log(`New connection: ${client.id}`);
     }
     handleDisconnect(client: any) {
-        // console.log(`Disconnected: ${client.id}`);
-        this.connectedClientCounts--;
-        console.log(this.connectedClientCounts);
+        console.log(`User disconnected: ${client.id}`);
     }
 
-    @SubscribeMessage('user-connected')
-    getConnectedUserId(@MessageBody() userId: string){
-        this.connectedUserId = userId;
-        console.log(`New user connection: ${this.connectedUserId}`);
-    }
-    @SubscribeMessage('user-disconnected')
-    deleteDisconnectedUserId(@MessageBody() userId: string){
-        this.connectedUserId = undefined;
-        console.log(`User disconnected: ${userId}`);
+    @UseGuards(SocketGuard)
+    @SubscribeMessage('update-like')
+    async likePost(@MessageBody() data: any, @ConnectedSocket() client: Socket){
+        const postId = data.data;
+        const connectedUserId = client['userId'];
+        const dataEmitted = await this.postService.likePost(postId, connectedUserId);
+        this.server.emit('new-like', dataEmitted);
     }
 
-    @SubscribeMessage('like-events')
-    async emitLikes(@MessageBody() postId: string, @ConnectedSocket() client: Socket){
-        const dataEmitted = await this.postService.likePost(postId, this.connectedUserId);
-        // client.emit('like-events', dataEmitted);
-        this.server.emit('like-events', dataEmitted);
-    }
-
-    @SubscribeMessage('comment-events')
-    async emitNewComment(@MessageBody() createCommentDto: CreateCommentDto){
-        const dataEmitted = await this.postCommentService.commentPost(createCommentDto, this.connectedUserId);
-        this.server.emit('new-comment', dataEmitted, (err, res) =>{
-            if(!err){
-                console.log('Client received:', res);
-                
-            }
-        });
+    @UseGuards(SocketGuard)
+    @SubscribeMessage('create-comment')
+    async commentPost(@MessageBody() data: any, @ConnectedSocket() client: Socket){
+        const createCommentDto: CreateCommentDto = data.data;
+        const connectedUserId = client['userId'];
+        const dataEmitted = await this.postCommentService.commentPost(createCommentDto, connectedUserId);
+        //emit new comment to client
+        this.server.emit('new-comment', dataEmitted);
+        const totalComments = await this.postCommentService.countTotalCommentFromPost(createCommentDto.postCommented);
+        //emit new total comments to client
+        this.server.emit('update-total-comment', totalComments);
     }
 }

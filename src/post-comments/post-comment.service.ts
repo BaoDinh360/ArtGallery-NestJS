@@ -29,6 +29,20 @@ export class PostCommentService{
         }
     }
 
+    async countTotalCommentFromPost(postId: string){
+        try {
+            const totalComments = await this.postCommentRepository.coundDocumentWithCondition(
+                {postCommented: postId}
+            )
+            return {
+                postId: postId,
+                totalComments: totalComments
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async commentPost(createCommentDto: CreateCommentDto, userId: string){
         try {
             const postId = createCommentDto.postCommented;
