@@ -21,8 +21,14 @@ export class PostRepository extends MongooseRepository<Post>{
                 as: 'postComments'
             }},
             {$addFields:{
-                commentCount: {$size: '$postComments'},
-                likeCount: {$size: '$userLikedPost'},
+                // commentCount: {$size: '$postComments'},
+                // likeCount: {$size: '$userLikedPost'},
+                commentCount: {
+                    $size: { '$ifNull' : ['$postComments', []]}
+                },
+                likeCount: {
+                    $size: { '$ifNull' : ['$userLikedPost', []]}
+                },
                 postImage: '$postImage.path'
             }},
             {$sort: {createdAt: -1}},
@@ -43,8 +49,14 @@ export class PostRepository extends MongooseRepository<Post>{
                 as: 'postComments'
             }},
             {$addFields:{
-                commentCount: {$size: '$postComments'},
-                likeCount: {$size: '$userLikedPost'},
+                // commentCount: {$size: '$postComments'},
+                // likeCount: {$size: '$userLikedPost'},
+                commentCount: {
+                    $size: { '$ifNull' : ['$postComments', []]}
+                },
+                likeCount: {
+                    $size: { '$ifNull' : ['$userLikedPost', []]}
+                },
                 postImage: '$postImage.path',
             }},
             {$limit: 1}
@@ -63,8 +75,14 @@ export class PostRepository extends MongooseRepository<Post>{
                 as: 'postComments'
             }},
             {$addFields:{
-                commentCount: {$size: '$postComments'},
-                likeCount: {$size: '$userLikedPost'},
+                // commentCount: {$size: '$postComments'},
+                // likeCount: {$size: '$userLikedPost'},
+                commentCount: {
+                    $size: { '$ifNull' : ['$postComments', []]}
+                },
+                likeCount: {
+                    $size: { '$ifNull' : ['$userLikedPost', []]}
+                },
                 postImage: '$postImage.path',
             }},
             {$sort: {createdAt: -1}},

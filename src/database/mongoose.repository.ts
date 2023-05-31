@@ -46,7 +46,13 @@ export abstract class MongooseRepository<T>{
     }
 
     async insertOne(createData: unknown, populate?: any): Promise<T>{
-        return (await this.mongooseModel.create(createData)).populate(populate);
+        if(populate == undefined){
+            return await this.mongooseModel.create(createData);
+        }
+        else{
+            return (await this.mongooseModel.create(createData)).populate(populate);
+        }
+        
     }
 
     async findByIdAndUpdateOne(

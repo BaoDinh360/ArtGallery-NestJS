@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, Res, UnauthorizedException } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { User } from 'src/user/schemas/user.schema';
@@ -10,6 +10,7 @@ import { UserLoginDto } from 'src/user/dtos/user-login.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthSession } from './schemas/auth-session.schema';
 import mongoose, { Model } from 'mongoose';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +23,7 @@ export class AuthService {
     private accessTokenExpires: string = process.env.ACCESS_TOKEN_EXPIRES || '60m';
     private refreshTokenExpires: string = process.env.REFRESH_TOKEN_EXPIRES || '1d';
 
-    async signIn(userLoginDto : UserLoginDto): Promise<AuthDto>{
+    async signIn(userLoginDto : UserLoginDto, @Res({passthrough: true}) res: Response): Promise<AuthDto>{
         try {
             const user = await this.userService.findUserByEmail(userLoginDto.email);
             if(!user || !await bcrypt.compare(userLoginDto.password, user.password)){
@@ -36,10 +37,17 @@ export class AuthService {
                     userId: user['_id'],
                     refreshToken: refreshToken
                 })
+                //send refreshToken in httponly cookie
+                res.cookie('jwt-refresh', refreshToken, {
+                    httpOnly: true,
+                    maxAge: 86400000 * 1, // 1 day converted to miliseconds
+                    sameSite: 'none',
+                    secure: true
+                });
                 return {
                     accessToken: accessToken,
-                    refreshToken: refreshToken,
-                    expiredIn: this.accessTokenExpires
+                    // refreshToken: refreshToken,
+                    // expiredIn: this.accessTokenExpires
                 }
             }
         } catch (error) {
@@ -69,9 +77,10 @@ export class AuthService {
         }
     }
 
-    async signOut(userId: string){
+    async signOut(userId: string, @Res({passthrough: true}) res: Response){
         try {
             await this.authSessionModel.findOneAndDelete({userId: userId});
+            res.clearCookie('jwt-refresh');
             return{
                 message: 'User has signed out'
             }
@@ -80,24 +89,58 @@ export class AuthService {
         }
     }
 
-    async refreshAccessToken(refreshToken: string){
+    // async refreshAccessToken(refreshToken: string){
+    //     try {
+    //         //TH ko truyền refresh token xuống
+    //         if(!refreshToken || refreshToken === ''){
+    //             throw new UnauthorizedException('Unauthorized access without token');
+    //         }
+    //         //TH so sánh refresh token từ request với token trong DB
+    //         const payload = await this.jwtService.decode(refreshToken);
+    //         const authUserSession = await this.authSessionModel.findOne({userId: payload['_id']});
+    //         //Xóa record lưu refresh token của user đó trong DB
+    //         await this.authSessionModel.findByIdAndDelete(authUserSession._id);
+    //         if(refreshToken !== authUserSession.refreshToken){
+    //             throw new ForbiddenException('Refresh token does not match');
+    //         }
+    //         //TH check xem refresh token trong DB đã expire chưa
+    //         const verify = await this.jwtService.verifyAsync(authUserSession.refreshToken, {
+    //             secret: process.env.REFRESH_TOKEN_SECRET
+    //         })
+    //         const user = await this.userService.findUserById(payload['_id']);
+    //         const newAccessToken = await this.generateAccessToken(user);
+    //         const newRefreshToken = await this.generateRefreshToken(user);
+    //         await this.authSessionModel.create({
+    //             userId: payload['_id'],
+    //             refreshToken: newRefreshToken
+    //         })
+    //         return {
+    //             accessToken: newAccessToken,
+    //             refreshToken: newRefreshToken,
+    //             expiredIn: this.accessTokenExpires
+    //         }
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+    async refreshAccessToken(refreshToken: string, @Res({passthrough: true}) res: Response){
         try {
-            //TH ko truyền refresh token xuống
             if(!refreshToken || refreshToken === ''){
                 throw new UnauthorizedException('Unauthorized access without token');
             }
-            //TH so sánh refresh token từ request với token trong DB
             const payload = await this.jwtService.decode(refreshToken);
-            const authUserSession = await this.authSessionModel.findOne({userId: payload['_id']});
-            //Xóa record lưu refresh token của user đó trong DB
-            await this.authSessionModel.findByIdAndDelete(authUserSession._id);
-            if(refreshToken !== authUserSession.refreshToken){
-                throw new ForbiddenException('Refresh token does not match');
-            }
-            //TH check xem refresh token trong DB đã expire chưa
-            const verify = await this.jwtService.verifyAsync(authUserSession.refreshToken, {
+            const authSession = await this.authSessionModel.findOne({userId: payload['_id']});
+            await this.authSessionModel.findByIdAndDelete(authSession._id)
+            //verify if refreshToken still valid
+            await this.jwtService.verifyAsync(refreshToken, {
                 secret: process.env.REFRESH_TOKEN_SECRET
             })
+            //verify if this refreshToken match in DB
+            if(refreshToken !== authSession.refreshToken){
+                throw new ForbiddenException('Refresh token does not match');
+            }
+            //create new accessToken and refreshToken, save new refreshToken to DB
             const user = await this.userService.findUserById(payload['_id']);
             const newAccessToken = await this.generateAccessToken(user);
             const newRefreshToken = await this.generateRefreshToken(user);
@@ -105,11 +148,14 @@ export class AuthService {
                 userId: payload['_id'],
                 refreshToken: newRefreshToken
             })
-            return {
-                accessToken: newAccessToken,
-                refreshToken: newRefreshToken,
-                expiredIn: this.accessTokenExpires
-            }
+            //send refreshToken in httponly cookie
+            res.cookie('jwt-refresh', newRefreshToken, {
+                httpOnly: true,
+                maxAge: 86400000 * 1, // 1 day converted to miliseconds
+                sameSite: 'none',
+                secure: true
+            });
+            return { accessToken: newAccessToken };
         } catch (error) {
             throw error;
         }
