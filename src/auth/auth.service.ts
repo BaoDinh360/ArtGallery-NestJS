@@ -127,7 +127,8 @@ export class AuthService {
     async refreshAccessToken(refreshToken: string, @Res({passthrough: true}) res: Response){
         try {
             if(!refreshToken || refreshToken === ''){
-                throw new UnauthorizedException('Unauthorized access without token');
+                //throw new UnauthorizedException('Unauthorized access without token');
+                return;
             }
             const payload = await this.jwtService.decode(refreshToken);
             const authSession = await this.authSessionModel.findOne({userId: payload['_id']});

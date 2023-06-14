@@ -6,6 +6,7 @@ import { PostService } from "./post.service";
 import { CommonModule } from "src/common/common.module";
 import { UserModule } from "src/user/user.module";
 import { PostRepository } from "./post.repository";
+import { PostCommentModule } from "src/post-comments/post-comment.module";
 
 @Module({
     imports: [
@@ -13,6 +14,7 @@ import { PostRepository } from "./post.repository";
             { name: Post.name, schema: PostSchema}]),
         CommonModule,
         UserModule,
+        PostCommentModule,
     ],
     controllers: [PostController],
     providers: [PostService, PostRepository],

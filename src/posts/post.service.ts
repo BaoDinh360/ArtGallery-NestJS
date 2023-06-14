@@ -11,6 +11,7 @@ import { PaginatePostDto } from "./dtos/paginate-post.dto";
 import { PostRepository } from "./post.repository";
 import { classToPlain, instanceToPlain, plainToClass, plainToInstance, serialize } from "class-transformer";
 import { LikePostDto } from "./dtos/like-post.dto";
+import { PostCommentService } from "src/post-comments/post-comment.service";
 
 
 @Injectable()
@@ -19,6 +20,7 @@ export class PostService{
         @InjectModel(Post.name) private postModel : Model<Post>,
         private userService: UserService,
         private postRepository: PostRepository,
+        private postCommentService: PostCommentService,
     ){}
 
     async getAllPosts(queryPage: string, queryLimit: string){
@@ -158,6 +160,8 @@ export class PostService{
                     throw new ForbiddenException('This user is not authorized to delete this post');
                 }
                 const isPostDeleted = await this.postRepository.findByIdAndDeleteOne(postId);
+                //delete all comment from this post(if any)
+                await this.postCommentService.deleteAllPostComments(postId);
                 return isPostDeleted;
             }
         } catch (error) {
@@ -175,10 +179,32 @@ export class PostService{
                 await this.postRepository.findByIdAndUpdateOne(postId, { $push: {userLikedPost : userId}}, {'timestamps': false});
                 const updatedPost = await this.postRepository.findByIdWithCondition(postId)
                 return { 
+                    type: 'like',
                     id: postId,
-                    likes: updatedPost.userLikedPost.length
+                    likes: updatedPost.userLikedPost.length,
+                    userId: userId
                 };
-                
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+    
+    async unLikePost(postId: string, userId: string): Promise<LikePostDto>{
+        try {
+            const post = await this.postRepository.findByIdWithCondition(postId);
+            if(!post){
+                throw new BadRequestException(`Cannot find post with id : ${postId}`);
+            }
+            else{
+                await this.postRepository.findByIdAndUpdateOne(postId, { $pull: {userLikedPost : userId}}, {'timestamps': false});
+                const updatedPost = await this.postRepository.findByIdWithCondition(postId);
+                return{
+                    type: 'unlike',
+                    id: postId,
+                    likes: updatedPost.userLikedPost.length,
+                    userId: userId
+                }
             }
         } catch (error) {
             throw error;

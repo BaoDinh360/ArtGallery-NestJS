@@ -82,4 +82,9 @@ export abstract class MongooseRepository<T>{
         const deletedResult = await this.mongooseModel.findOneAndDelete(filterQuery);
         return deletedResult.$isDeleted(true);
     }
+
+    async deleteMany(filterQuery: FilterQuery<T>): Promise<number>{
+        const result = await this.mongooseModel.deleteMany(filterQuery);
+        return result.deletedCount;
+    }
 }

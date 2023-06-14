@@ -10,7 +10,7 @@ import { PostCommentDto } from "./dtos/post-comment.dto";
 export class PostCommentService{
     constructor(
         private postCommentRepository: PostCommentRepository,
-        private postRepository: PostRepository,
+        // private postRepository: PostRepository,
     ){}
 
     async getCommentsFromPost(postId: string){
@@ -46,16 +46,29 @@ export class PostCommentService{
     async commentPost(createCommentDto: CreateCommentDto, userId: string){
         try {
             const postId = createCommentDto.postCommented;
-            const post = await this.postRepository.findByIdWithCondition(postId);
-            if(!post){
-                throw new BadRequestException(`Cannot find post with id : ${postId}`);
-            }
-            else{
-                createCommentDto.userCommented = userId;
-                const newComment = await this.postCommentRepository.insertOne(createCommentDto, {path: 'userCommented', select: '_id username avatar'});
-                const postCommentDto = plainToInstance(PostCommentDto, newComment, {excludeExtraneousValues:true});
-                return postCommentDto;
-            }
+            // const post = await this.postRepository.findByIdWithCondition(postId);
+            // if(!post){
+            //     throw new BadRequestException(`Cannot find post with id : ${postId}`);
+            // }
+            // else{
+            //     createCommentDto.userCommented = userId;
+            //     const newComment = await this.postCommentRepository.insertOne(createCommentDto, {path: 'userCommented', select: '_id username avatar'});
+            //     const postCommentDto = plainToInstance(PostCommentDto, newComment, {excludeExtraneousValues:true});
+            //     return postCommentDto;
+            // }
+            createCommentDto.userCommented = userId;
+            const newComment = await this.postCommentRepository.insertOne(createCommentDto, {path: 'userCommented', select: '_id username avatar'});
+            const postCommentDto = plainToInstance(PostCommentDto, newComment, {excludeExtraneousValues:true});
+            return postCommentDto;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async deleteAllPostComments(postId: string){
+        try {
+            const result = await this.postCommentRepository.deleteMany({postCommented: postId});
+            console.log(`Total comments deleted:${result}`);
         } catch (error) {
             throw error;
         }

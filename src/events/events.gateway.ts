@@ -31,12 +31,21 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     }
 
     @UseGuards(SocketGuard)
-    @SubscribeMessage('update-like')
+    @SubscribeMessage('new-like')
     async likePost(@MessageBody() data: any, @ConnectedSocket() client: Socket){
         const postId = data.data;
         const connectedUserId = client['userId'];
         const dataEmitted = await this.postService.likePost(postId, connectedUserId);
-        this.server.emit('new-like', dataEmitted);
+        this.server.emit('like-update', dataEmitted);
+    }
+
+    @UseGuards(SocketGuard)
+    @SubscribeMessage('unlike')
+    async unLikePost(@MessageBody() data: any, @ConnectedSocket() client: Socket){
+        const postId = data.data;
+        const connectedUserId = client['userId'];
+        const dataEmitted = await this.postService.unLikePost(postId, connectedUserId);
+        this.server.emit('like-update', dataEmitted);
     }
 
     @UseGuards(SocketGuard)

@@ -14,7 +14,7 @@ import { PostModule } from "src/posts/post.module";
         MongooseModule.forFeature([
             { name: PostComment.name, schema: PostCommentSchema }]),
         CommonModule,
-        PostModule
+        // PostModule
     ],
     controllers: [PostCommentController],
     providers: [PostCommentService, PostCommentRepository],
