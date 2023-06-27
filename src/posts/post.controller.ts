@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from "@nestjs/common";
 import { PostService } from "./post.service";
 import { CreatePostDto } from "./dtos/create-post.dto";
 import { Request } from "express";
@@ -8,6 +8,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import {multerOptions } from "src/common/configs/multer.config";
 import { PostImageDto } from "./dtos/post.dto";
 import { Image } from "src/shared/schemas/image.schema";
+import { PostSearchDto } from "./dtos/post-search.dto";
 
 @Controller('/api/posts')
 export class PostController{
@@ -17,15 +18,18 @@ export class PostController{
 
     //api/posts
     @Get()
-    async getAllPosts(@Query() query){
-        return await this.postService.getAllPosts(query.page, query.limit);
+    @UsePipes(new ValidationPipe({transform: true}))
+    async getAllPosts(@Query() postSearchDto : PostSearchDto){
+        return await this.postService.getAllPosts(postSearchDto);
     }
 
     //api/posts/my-posts
     @UseGuards(AuthGuard)
     @Get('my-posts')
-    async getAllPostsByCurrentUser(@Query() query, @Req() request: Request){
-        return await this.postService.getAllPostsCreateByUser(query.page, query.limit, request['user']['_id']);
+    @UsePipes(new ValidationPipe({transform: true}))
+    async getAllPostsByCurrentUser(@Query() postSearchDto : PostSearchDto, @Req() request: Request){
+        postSearchDto.authorId = request['user']['_id'];
+        return await this.postService.getAllPostsCreateByUser(postSearchDto);
     }
 
     //api/posts/:id

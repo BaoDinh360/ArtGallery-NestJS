@@ -12,6 +12,7 @@ import { PostRepository } from "./post.repository";
 import { classToPlain, instanceToPlain, plainToClass, plainToInstance, serialize } from "class-transformer";
 import { LikePostDto } from "./dtos/like-post.dto";
 import { PostCommentService } from "src/post-comments/post-comment.service";
+import { PostSearchDto } from "./dtos/post-search.dto";
 
 
 @Injectable()
@@ -23,31 +24,34 @@ export class PostService{
         private postCommentService: PostCommentService,
     ){}
 
-    async getAllPosts(queryPage: string, queryLimit: string){
+    async getAllPosts(postSearchDto: PostSearchDto){
         try {
             const totalPosts = await this.postRepository.coundDocumentWithCondition();
-            let page = Number(queryPage);
-            let limit = Number(queryLimit);
-            let skip = 0;
-            if(Number.isNaN(page) || Number.isNaN(limit)){
-                page = 0;
-                limit = totalPosts;
-                console.log(limit, totalPosts);
+            // let page = Number(queryPage);
+            // let limit = Number(queryLimit);
+            // let skip = 0;
+            // if(Number.isNaN(page) || Number.isNaN(limit)){
+            //     page = 0;
+            //     limit = totalPosts;
+            //     console.log(limit, totalPosts);
+            // }
+            // else {
+            //     skip = (page - 1) * limit;
+            // } 
+
+            const authorId = await this.userService.findUserByUsername(postSearchDto.authorName);
+            if(authorId){
+                postSearchDto.authorId = authorId.id;
             }
-            else {
-                skip = (page - 1) * limit;
-            } 
-            
-            const totalPage = Math.ceil(totalPosts/ limit); 
-            const posts = await this.postRepository.getAllPosts(skip, limit);
-            // console.log(posts);
-            
+
+            const totalPage = Math.ceil(totalPosts/ postSearchDto.limit); 
+            const posts = await this.postRepository.getAllPosts(postSearchDto);
             const postDtos = plainToInstance(PostDto, posts, {excludeExtraneousValues:true});
             
             const paginatePostDto : PaginatePostDto<PostDto> = {
                 totalCount: totalPosts,
-                itemsPerPage: Number(limit),
-                pageIndex : Number(page),
+                itemsPerPage: postSearchDto.limit,
+                pageIndex : postSearchDto.page,
                 totalPage : totalPage,
                 items: postDtos
             }
@@ -67,34 +71,30 @@ export class PostService{
         }
     }
 
-    async getAllPostsCreateByUser(queryPage : string, queryLimit: string, authorId: string){
-        console.log(queryPage, queryLimit);
-        
+    async getAllPostsCreateByUser(postSearchDto: PostSearchDto){
         try {
             const totalPosts = await this.postRepository.coundDocumentWithCondition({
-                author: authorId
+                author: postSearchDto.authorId
             });
-            let page = Number(queryPage);
-            let limit = Number(queryLimit);
-            let skip = 0;
-            if(Number.isNaN(page) || Number.isNaN(limit)){
-                page = 0;
-                limit = totalPosts;
-                console.log(limit, totalPosts);
-            }
-            else {
-                skip = (page - 1) * limit;
-            }
+            // let page = Number(queryPage);
+            // let limit = Number(queryLimit);
+            // let skip = 0;
+            // if(Number.isNaN(page) || Number.isNaN(limit)){
+            //     page = 0;
+            //     limit = totalPosts;
+            //     console.log(limit, totalPosts);
+            // }
+            // else {
+            //     skip = (page - 1) * limit;
+            // }
             
-            const totalPage = Math.ceil((totalPosts / Number(limit)));
-            console.log(limit, skip);
-            console.log(typeof limit, typeof skip);
-            const posts = await this.postRepository.getPostsByAuthor(skip, limit, authorId);
+            const totalPage = Math.ceil((totalPosts / postSearchDto.limit));
+            const posts = await this.postRepository.getPostsByAuthor(postSearchDto);
             const postDtos = plainToInstance(PostDto, posts, {excludeExtraneousValues:true});
             const paginatePostDto : PaginatePostDto<PostDto> = {
                 totalCount: totalPosts,
-                itemsPerPage: Number(limit),
-                pageIndex : Number(page),
+                itemsPerPage: postSearchDto.limit,
+                pageIndex : postSearchDto.page,
                 totalPage : totalPage,
                 items: postDtos
             }

@@ -132,7 +132,10 @@ export class AuthService {
             }
             const payload = await this.jwtService.decode(refreshToken);
             const authSession = await this.authSessionModel.findOne({userId: payload['_id']});
-            await this.authSessionModel.findByIdAndDelete(authSession._id)
+            if(authSession !== null ){
+                await this.authSessionModel.findByIdAndDelete(authSession._id);
+            }
+            
             //verify if refreshToken still valid
             await this.jwtService.verifyAsync(refreshToken, {
                 secret: process.env.REFRESH_TOKEN_SECRET

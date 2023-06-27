@@ -26,6 +26,11 @@ export class UserService {
         return user;
     }
 
+    async findUserByUsername(username: string) : Promise<User | undefined>{
+        const user = await this.userRepository.findOne({username: username});
+        return user;
+    }
+
     async getUserProfile(id: string) : Promise<UserDto | undefined>{
         //const user =  await this.userModel.findById(id).select('-__v -password');
         const user = await this.userRepository.findByIdWithCondition(id, {'password':0});
