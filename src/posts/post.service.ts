@@ -106,11 +106,15 @@ export class PostService{
 
     async createPost(createPostDto : CreatePostDto, authorId : string): Promise<string>{
         try {
+            // const postData = {
+            //     postName: createPostDto.postName,
+            //     author: authorId,
+            //     description: createPostDto.description,
+            //     postImage: createPostDto.postImage,
+            // }
             const postData = {
-                postName: createPostDto.postName,
-                author: authorId,
-                description: createPostDto.description,
-                postImage: createPostDto.postImage
+                ...createPostDto,
+                author: authorId
             }
             const newPost = await this.postRepository.insertOne(postData);
             return newPost._id;

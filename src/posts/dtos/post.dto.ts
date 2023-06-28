@@ -100,6 +100,10 @@ export class PostDto{
     likeCount: number;
     @Expose()
     commentCount: number;
+    //tags
+    @Type(() => String)
+    @Expose()
+    postTags: string[];
     //createdAt
     @Expose()
     @Type(() => Date)

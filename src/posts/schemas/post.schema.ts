@@ -29,6 +29,8 @@ export class Post extends mongoose.Document{
     @Prop({type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: undefined})
     userLikedPost: User[];
 
+    @Prop()
+    postTags: string[];
     
     @Prop({type: Date})
     createdAt? : Date;
