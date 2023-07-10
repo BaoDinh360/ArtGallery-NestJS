@@ -8,6 +8,7 @@ import { Request } from "express";
 import { CreateCommentDto } from "src/post-comments/dtos/create-comment.dto";
 import { PostCommentService } from "src/post-comments/post-comment.service";
 import { SocketGuard } from "src/common/guards/socket/socket.guard";
+import { LoggerService } from "src/common/services/utils/logger.service";
 
 @WebSocketGateway({
     cors:{
@@ -18,16 +19,20 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     constructor(
         private postService: PostService,
         private postCommentService: PostCommentService,
+        private logService: LoggerService,
     ){}
     @WebSocketServer() server: Server;
     afterInit(server: Server) {
-        console.log('Socket instantiated');
+        // console.log('Socket instantiated');
+        this.logService.logInfo('Socket instantiated');
     }
     handleConnection(client: any, ...args: any[]) {
-        console.log(`New connection: ${client.id}`);
+        // console.log(`New connection: ${client.id}`);
+        this.logService.logInfo(`New connection: ${client.id}`);
     }
     handleDisconnect(client: any) {
-        console.log(`User disconnected: ${client.id}`);
+        // console.log(`User disconnected: ${client.id}`);
+        this.logService.logInfo(`User disconnected: ${client.id}`);
     }
 
     @UseGuards(SocketGuard)
