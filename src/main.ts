@@ -4,7 +4,6 @@ import * as express from 'express';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 import * as cookieParser from 'cookie-parser';
-// import { ValidationPipe } from './common/pipes/validation.pipe';
 
 const port = process.env.PORT || 3000;
 
@@ -12,11 +11,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   //#region App configuration
+
   //serve static image folder
   app.use('/uploads', express.static('uploads'));
+
   //cookie parser
   app.use(cookieParser());
-  //global validation pipe
+
+  //global validation pipe config
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
     disableErrorMessages: false,

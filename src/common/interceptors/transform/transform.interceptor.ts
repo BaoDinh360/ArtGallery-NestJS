@@ -9,7 +9,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ResponseResul
       status : Status.SUCCESS, // mặc định là success
       statusCode : context.switchToHttp().getResponse().statusCode,
       data : data,
-      message : '',
+      message : 'Request success',
       stack : ''
     })));
   }
