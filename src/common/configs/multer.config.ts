@@ -20,13 +20,13 @@ const storage = diskStorage({
 
 const fileFilter = (req, file, cb) =>{
     //accept file
-    let ext = path.extname(file.originalname);
+    let ext = path.extname(file.originalname).toLowerCase();
     if(ext === '.jpg' || ext === '.jpeg' || ext === '.png'){
         cb(null, true);
     }
     //reject a file
     else{
-        const error = new Error('Only accept JPEG or PNG image files');
+        const error = new Error('Only accept jpg, jpgeg, png image files');
         cb(error, false);
     }
 }

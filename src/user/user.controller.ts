@@ -41,4 +41,26 @@ export class UserController{
     async updateCurrentUserInfo(@Body() updateUserDto: UpdateUserDto, @Req() request: Request){
         return await this.userService.updateCurrentUser(updateUserDto, request['user']['_id']);
     }
+
+    //api/users/update
+    // @UseGuards(AuthGuard)
+    // @Post('update')
+    // @UseInterceptors(FileInterceptor('avatar', multerOptions))
+    // async updateCurrentUserInfo(@UploadedFile() file : Express.Multer.File, @Req() request: Request,
+    //     @Body() updateUserDto: UpdateUserDto){
+        
+    //     if(file){
+    //         const fullImgUrl = `${request.protocol}://${request.get('Host')}/${file.path}`;
+    //         const fileDto : FileDto ={
+    //             name: file.filename,
+    //             type: file.filename.split('.')[1],
+    //             size: file.size,
+    //             path: fullImgUrl
+    //         }
+    //         updateUserDto.avatar = fileDto;
+    //     }
+
+    //     return this.userService.updateCurrentUser(updateUserDto, request['user']['_id']);
+    // }
+
 }
