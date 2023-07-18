@@ -25,14 +25,28 @@ export class UserController{
     @UseGuards(AuthGuard)
     @Post('upload')
     @UseInterceptors(FileInterceptor('avatar', multerOptions))
-    uploadFile(@UploadedFile() file : Express.Multer.File, @Req() request: Request) : Image{
+    async uploadAvatar(@UploadedFile() file : Express.Multer.File, @Req() request: Request){
         const fullImgUrl = `${request.protocol}://${request.get('Host')}/${file.path}`;
-        return {
+        const userAvatar : Image ={
             name: file.filename,
             type : file.filename.split('.')[1],
             size : file.size,
             path : fullImgUrl
         }
+        const userId = request['user']['_id'];
+        const userDto = await this.userService.getUserProfile(userId);
+        const updateUserDto: UpdateUserDto ={
+            name: userDto.name,
+            username: userDto.username,
+            avatar: userAvatar
+        }
+        return await this.userService.updateCurrentUser(updateUserDto, userId);
+        // return {
+        //     name: file.filename,
+        //     type : file.filename.split('.')[1],
+        //     size : file.size,
+        //     path : fullImgUrl
+        // }
     } 
 
     //api/users/update
