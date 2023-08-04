@@ -11,6 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AuthSession } from './schemas/auth-session.schema';
 import mongoose, { Model } from 'mongoose';
 import { Response } from 'express';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
@@ -30,10 +31,13 @@ export class AuthService {
                 throw new UnauthorizedException('Incorrect email or password');
             }
             else{
+                //generate id for each session
+                const sessionId = new mongoose.Types.ObjectId().toString();
                 const accessToken = await this.generateAccessToken(user);
-                const refreshToken = await this.generateRefreshToken(user);
+                const refreshToken = await this.generateRefreshToken(user, sessionId);
                 //save refreshToken to db
                 await this.authSessionModel.create({
+                    sessionId: sessionId,
                     userId: user['_id'],
                     refreshToken: refreshToken
                 })
@@ -77,9 +81,13 @@ export class AuthService {
         }
     }
 
-    async signOut(userId: string, @Res({passthrough: true}) res: Response){
+    async signOut(refreshToken: string, @Res({passthrough: true}) res: Response){
         try {
-            await this.authSessionModel.findOneAndDelete({userId: userId});
+            if(!refreshToken || refreshToken === ''){
+                return;
+            }
+            const payload = await this.jwtService.decode(refreshToken);
+            await this.authSessionModel.deleteMany({userId : payload['_id']});
             res.clearCookie('jwt-refresh');
             return{
                 message: 'User has signed out'
@@ -128,30 +136,53 @@ export class AuthService {
         try {
             if(!refreshToken || refreshToken === ''){
                 //throw new UnauthorizedException('Unauthorized access without token');
-                return;
+                return { accessToken: '' };
             }
             const payload = await this.jwtService.decode(refreshToken);
-            const authSession = await this.authSessionModel.findOne({userId: payload['_id']});
-            if(authSession !== null ){
-                await this.authSessionModel.findByIdAndDelete(authSession._id);
-            }
+            console.log('payload',payload);
+            console.log('payload sessionid',payload['sessionId']);
+            console.log('typeof payload sessionid',typeof payload['sessionId']);
             
-            //verify if refreshToken still valid
-            await this.jwtService.verifyAsync(refreshToken, {
-                secret: process.env.REFRESH_TOKEN_SECRET
-            })
+            // const authSession = await this.authSessionModel.findOne({userId: payload['_id']});
+            // const authSessionObjectId = new mongoose.Types.ObjectId(payload['sessionId']);
+            // console.log(authSessionObjectId);
+
+            const authSession = await this.authSessionModel.findOne({sessionId: payload['sessionId']});
+            console.log('real authsession', authSession);
+            
+            if(!authSession || !authSession.refreshToken){
+                throw new ForbiddenException('Forbidden access');
+            }
+            // if(authSession !== null ){
+            //     await this.authSessionModel.findByIdAndDelete(authSession._id);
+            // }
+
             //verify if this refreshToken match in DB
             if(refreshToken !== authSession.refreshToken){
                 throw new ForbiddenException('Refresh token does not match');
             }
+            //verify if refreshToken still valid
+            await this.jwtService.verifyAsync(refreshToken, {
+                secret: process.env.REFRESH_TOKEN_SECRET
+            })
+            
             //create new accessToken and refreshToken, save new refreshToken to DB
+            const newSessionId = new mongoose.Types.ObjectId().toString();
             const user = await this.userService.findUserById(payload['_id']);
             const newAccessToken = await this.generateAccessToken(user);
-            const newRefreshToken = await this.generateRefreshToken(user);
-            await this.authSessionModel.create({
-                userId: payload['_id'],
+            const newRefreshToken = await this.generateRefreshToken(user, newSessionId);
+            
+            // await this.authSessionModel.updateMany({userId: payload['_id']}, {
+            //     refreshToken: newRefreshToken
+            // })
+            await this.authSessionModel.findByIdAndUpdate(authSession._id, {
+                sessionId: newSessionId,
                 refreshToken: newRefreshToken
             })
+            // await this.authSessionModel.create({
+            //     userId: payload['_id'],
+            //     refreshToken: newRefreshToken
+            // })
             //send refreshToken in httponly cookie
             res.cookie('jwt-refresh', newRefreshToken, {
                 httpOnly: true,
@@ -161,7 +192,13 @@ export class AuthService {
             });
             return { accessToken: newAccessToken };
         } catch (error) {
-            throw error;
+            //if verify refresh token failed then throw 403 error
+            if(error instanceof jwt.TokenExpiredError){
+                throw new ForbiddenException('Forbidden access');
+            }
+            else{
+                throw error;
+            }
         }
     }
 
@@ -176,11 +213,12 @@ export class AuthService {
             expiresIn: this.accessTokenExpires 
         })
     }
-    private async generateRefreshToken(user : User | UserDto) : Promise<string>{
+    private async generateRefreshToken(user : User | UserDto, sessionId: string) : Promise<string>{
         const payload = {
             _id: user['_id'],
             username: user.username,
-            email: user.email
+            email: user.email,
+            sessionId: sessionId
         }
         return await this.jwtService.signAsync(payload, {
             secret: process.env.REFRESH_TOKEN_SECRET,

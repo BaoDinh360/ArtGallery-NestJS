@@ -50,9 +50,6 @@ export class UserService {
         const newUser = await this.userRepository.insertOne(userData);
         const newUserDto = plainToInstance(UserDto, newUser, {excludeExtraneousValues:true});
         const newUserDtoJson = instanceToPlain(newUserDto) as UserDto;
-        console.log(newUser);
-        console.log(newUserDto);
-        console.log(newUserDtoJson);
         
         return newUserDtoJson;
     }
