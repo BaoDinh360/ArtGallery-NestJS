@@ -12,7 +12,7 @@ import { LoggerService } from "src/common/services/utils/logger.service";
 
 @WebSocketGateway({
     cors:{
-        origin: '*'
+        origin: 'http://localhost:4200'
     }
 })
 export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect{

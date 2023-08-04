@@ -4,7 +4,9 @@ import { ObjectId, SchemaTypes } from "mongoose";
 
 @Schema({timestamps: true})
 export class AuthSession{
-    @Prop({type: SchemaTypes.ObjectId})
+    @Prop({required: true})
+    sessionId: string;
+    @Prop({type: SchemaTypes.ObjectId, required: true})
     userId: ObjectId;
 
     @Prop({required: true})

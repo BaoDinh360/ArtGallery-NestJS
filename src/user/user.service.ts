@@ -7,6 +7,7 @@ import { UserDto } from './dtos/user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UserRepository } from './user.repository';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
+import { Image } from 'src/shared/schemas/image.schema';
 
 @Injectable()
 export class UserService {
@@ -49,13 +50,22 @@ export class UserService {
         const newUser = await this.userRepository.insertOne(userData);
         const newUserDto = plainToInstance(UserDto, newUser, {excludeExtraneousValues:true});
         const newUserDtoJson = instanceToPlain(newUserDto) as UserDto;
-        console.log(newUser);
-        console.log(newUserDto);
-        console.log(newUserDtoJson);
         
         return newUserDtoJson;
     }
     
+    // async updateUserAvatar(avatarImg: Image, userId: string){
+    //     try {
+    //         const user = await this.userRepository.findByIdWithCondition(userId);
+    //         if(!user){
+    //             throw new BadRequestException('User not found');
+    //         }
+    //         const updatedUser = await this.userRepository.find
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
     async updateCurrentUser(updateUserDto: UpdateUserDto, userId: string) : Promise<UserDto>{
         try {
             const user = await this.userRepository.findByIdWithCondition(userId);

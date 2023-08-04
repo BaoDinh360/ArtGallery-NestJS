@@ -22,11 +22,22 @@ export class AuthController {
         return await this.authService.SignUp(createUserDto);
     }
 
-    @UseGuards(AuthGuard)
+    // @UseGuards(AuthGuard)
+    // //api/auth/logout
+    // @Post('logout')
+    // async signOut(@Req() request: Request, @Res({passthrough: true}) response: Response){
+    //     return await this.authService.signOut(request['user']['_id'], response);
+    // }
+
+    // @UseGuards(AuthGuard)
     //api/auth/logout
     @Post('logout')
     async signOut(@Req() request: Request, @Res({passthrough: true}) response: Response){
-        return await this.authService.signOut(request['user']['_id'], response);
+        let refreshToken = undefined;
+        if(request.cookies['jwt-refresh']){
+            refreshToken = request.cookies['jwt-refresh'];
+        }
+        return await this.authService.signOut(refreshToken, response);
     }
 
     // @UseGuards(AuthGuard)

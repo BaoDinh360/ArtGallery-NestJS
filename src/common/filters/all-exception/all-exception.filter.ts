@@ -18,7 +18,7 @@ export class AllExceptionFilter implements ExceptionFilter {
     if(exception instanceof HttpException){
       status = exception.getStatus();
     }
-    //nếu là lỗi JWT hết hạn thì trả về 401
+    //nếu là lỗi JWT access token hết hạn thì trả về 401
     else if(exception instanceof jwt.TokenExpiredError){
       status = HttpStatus.UNAUTHORIZED;
     }
